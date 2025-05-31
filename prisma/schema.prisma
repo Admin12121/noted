@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String?    @unique
+  image         String?
+  emailVerified DateTime?
+  accounts      Account[]
+  sessions      Session[]
+  Document      Document[]
+
+  @@map("users")
+}
+
+model Document {
+  id               String    @id @default(cuid())
+  title            String
+  userId           String    @map("user_id")
+  isArchived       Boolean   @default(false) @map("is_archived")
+  parentDocumentId String?   @map("parent_document_id")
+  content          String?   @db.Text
+  coverImage       String?   @db.Text
+  icon             String?   @db.Text
+  isPublic         Boolean   @default(false) @map("is_public")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentDocument   Document? @relation("ParentDocument", fields: [parentDocumentId], references: [id])
+  childDocuments   Document[] @relation("ParentDocument")
+
+  @@index([userId], name: "idx_user_id")
+  @@index([userId, parentDocumentId], name: "idx_user_parent_document")
+  @@map("documents")
+}
