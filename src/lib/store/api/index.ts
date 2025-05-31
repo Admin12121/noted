@@ -49,11 +49,43 @@ export const userAuthapi = createApi({
         headers: createHeaders(),
       }),
     }),
+    archiveDocument: builder.mutation({
+      query: ({ id }) => ({
+        url: `api/documents/${id}`,
+        method: "DELETE",
+        headers: createHeaders(),
+      }),
+    }),
+    getArchiveDocuments: builder.query({
+      query: ({ params }) => ({
+        url: `api/documents/archive${buildQueryParams(params)}`,
+        method: "GET",
+        headers: createHeaders(),
+      }),
+    }),
+    recoverArchivedDocument: builder.mutation({
+      query: ({ id }) => ({
+        url: `api/documents/archive/${id}`,
+        method: "PATCH",
+        headers: createHeaders(),
+      }),
+    }),
+    deleteDocument: builder.mutation({
+      query: ({ id }) => ({
+        url: `api/documents/archive/${id}`,
+        method: "DELETE",
+        headers: createHeaders(),
+      }),
+    }),
   }),
 });
 
 export const {
   useCreateDocumentMutation,
   useGetDocumentsQuery,
-  useLazyGetDocumentsQuery
+  useLazyGetDocumentsQuery,
+  useArchiveDocumentMutation,
+  useGetArchiveDocumentsQuery,
+  useRecoverArchivedDocumentMutation,
+  useDeleteDocumentMutation,
 } = userAuthapi;

@@ -10,7 +10,7 @@ import { cn, delay } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import UserModal from '@/components/global/header/user-modal';
 import { useAuthUser } from '@/hooks/use-auth-user';
-import { ArrowBigDown, ArrowDown, ChevronsLeft, CornerUpRight, Ellipsis, EllipsisVertical, File, FilePenLine, icons, Link2, MoveUpRight, Plus, Trash } from 'lucide-react';
+import { ChevronsLeft, CornerUpRight, Ellipsis, EllipsisVertical, File, FilePenLine, icons, Link2, MoveUpRight, Plus, SlashIcon, Trash } from 'lucide-react';
 import Image from 'next/image';
 import {
     Breadcrumb,
@@ -23,7 +23,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { usePathname } from "next/navigation";
 import Link from 'next/link';
-import { useCreateDocumentMutation, useLazyGetDocumentsQuery } from '@/lib/store/api';
+import { useCreateDocumentMutation, useLazyGetDocumentsQuery, useArchiveDocumentMutation } from '@/lib/store/api';
 import { toast } from 'sonner';
 import {
     Tooltip,
@@ -48,14 +48,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Link as Linkit,
-  BookOpenIcon,
-  CircleUserRoundIcon,
-  Layers2Icon,
-  LogOutIcon,
-  PinIcon,
-  UserPenIcon,
+    Link as Linkit,
 } from "lucide-react"
+
 
 
 interface SidebarProps {
@@ -97,7 +92,7 @@ export default function ResizableLayout({
     });
 
     const [triggerGetDocuments] = useLazyGetDocumentsQuery();
-
+    const [deletePage] = useArchiveDocumentMutation();
     const { user, signOut } = useAuthUser();
 
     const [createDocument] = useCreateDocumentMutation();
@@ -138,12 +133,11 @@ export default function ResizableLayout({
                             data: [],
                             hasNext: true,
                         }),
-                        page: 1, // reset to first page
+                        page: 1,
                     },
                 }));
                 await delay(500);
                 fetchDocs(targetId);
-                // refetch();
             } else {
                 toast.error("Failed to create document.", {
                     id: "create-document",
@@ -204,6 +198,37 @@ export default function ResizableLayout({
         fetchDocs(parentId);
     };
 
+    const handleDeleteDocument = async (id: string) => {
+        try {
+            toast.loading("Moving to Trash...", {
+                id: "create-document",
+            });
+            await delay(500);
+            const response = await deletePage({ id }).unwrap();
+            if (!response) {
+                toast.error("Failed to move document to Trash.", {
+                    id: "create-document",
+                });
+                return;
+            }
+            toast.success("Moved to Trash successfully!", {
+                id: "create-document",
+            });
+            await delay(500);
+            setDocState((prev) => {
+                const newState = { ...prev };
+                Object.keys(newState).forEach((key) => {
+                    newState[key].data = newState[key].data.filter((doc) => doc.id !== id);
+                });
+                return newState;
+            });
+        } catch (error) {
+            console.error("Failed to delete document:", error);
+            toast.error("Failed to delete document.");
+        }
+    };
+
+
     const renderDocuments = (parentId = "root") => {
         const docs = docState[parentId]?.data || [];
         console.log(docs)
@@ -249,7 +274,7 @@ export default function ResizableLayout({
                                                 <MoveUpRight size={16} className="opacity-60" aria-hidden="true" />
                                                 <span>Move to </span>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDeleteDocument(doc.id)}>
                                                 <Trash size={16} className="opacity-60" aria-hidden="true" />
                                                 <span>Move to Trash</span>
                                             </DropdownMenuItem>
@@ -261,17 +286,12 @@ export default function ResizableLayout({
                                                 <span>Open in new tab</span>
                                             </DropdownMenuItem>
                                         </DropdownMenuGroup>
-                                        {/* <DropdownMenuSeparator />
-                                        <DropdownMenuItem>
-                                            <LogOutIcon size={16} className="opacity-60" aria-hidden="true" />
-                                            <span>Logout</span>
-                                        </DropdownMenuItem> */}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 <TooltipProvider delayDuration={0}>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant={"ghost"} size={"icon"} className="size-6 cursor-pointer" onClick={() => handleCreateDocument({ parentDocumentId: doc.id })}><Plus /></Button>
+                                            <Button variant={"ghost"} size={"icon"} className="size-6 cursor-pointer dark:hover:bg-neutral-900" onClick={() => handleCreateDocument({ parentDocumentId: doc.id })}><Plus /></Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="px-2 py-1 text-xs">
                                             Create a new page
@@ -331,7 +351,6 @@ export default function ResizableLayout({
                     <UserModal detailed={true} user={user} signOut={signOut} className="hover:!bg-none !bg-transparent !px-0" variant={"default"} />
                     <span className='flex flex-row items-center gap-2'>
                         <Button variant={"ghost"} size={"icon"} className='hidden group-hover:flex' onClick={() => collapseHandle()}>
-                            {/* <Image src={"/icons/arrow-left.svg"} height={24} width={24} alt='left arrow' className='invert' /> */}
                             <ChevronsLeft className='!h-5 !w-5' />
                         </Button>
                         <TooltipProvider delayDuration={0}>
@@ -348,13 +367,13 @@ export default function ResizableLayout({
                         </TooltipProvider>
                     </span>
                 </div>
-                <Doctree renderDocuments={renderDocuments} />
+                <Doctree renderDocuments={renderDocuments} handleCreateDocument={handleCreateDocument} />
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={defaultLayout[1] || 80} className='flex flex-col h-[100dvh] overflow-hidden'>
-                <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2">
+                <header className="flex h-12 shrink-0 items-center gap-2 px-2">
                     <Button variant={"ghost"} size={"icon"} className={cn("hidden", isCollapsed && 'flex')} onClick={() => collapseHandle()}>
-                        <Image src={"/icons/arrow-left.svg"} height={24} width={24} alt='left arrow' className='invert rotate-180' />
+                        <ChevronsLeft className='!h-5 !w-5 rotate-180' />
                     </Button>
                     <Separator
                         orientation="vertical"
@@ -363,11 +382,13 @@ export default function ResizableLayout({
                     <Breadcrumb>
                         <BreadcrumbList>
                             <BreadcrumbItem>
-                                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                                <BreadcrumbLink href="/documents">Home</BreadcrumbLink>
                             </BreadcrumbItem>
                             {pathSegments.map((segment, index) => (
                                 <React.Fragment key={index}>
-                                    <BreadcrumbSeparator />
+                                    <BreadcrumbSeparator>
+                                        <SlashIcon className="-rotate-[25deg] text-foreground/50" />
+                                    </BreadcrumbSeparator>
                                     <BreadcrumbItem>
                                         {index === pathSegments.length - 1 ? (
                                             <BreadcrumbPage>{segment}</BreadcrumbPage>

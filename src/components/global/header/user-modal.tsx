@@ -51,7 +51,7 @@ export default function UserModal({
       <DropdownMenuTrigger asChild>
         <Button variant={variant} className={cn("!outline-none !ring-0 !shadow-none cursor-pointer relative group px-5 rounded-none border-none text-muted-foreground", !detailed && " w-[56px] h-[56px]", className)} aria-label="Open account menu">
           <Avatar className="rounded-md">
-            <AvatarImage src={user.image} alt="Kelly King" />
+            <AvatarImage src={user?.image} alt={user.name} />
             <AvatarFallback><CircleUserRoundIcon size={24} className="!w-5 !h-5" aria-hidden="true" /></AvatarFallback>
           </Avatar>
           {detailed && (
