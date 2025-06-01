@@ -13,7 +13,7 @@ export default async function RootLayout({
     const collapsed = cookieStore.get('react-resizable-panels:collapsed')
 
     return (
-        <main className="flex h-screen w-full bg-[#191919]">
+        <main className="flex h-screen w-full bg-white dark:bg-[#191919]">
             <SidebarLayout layout={layout?.value} collapsed={collapsed?.value}>{children}</SidebarLayout>
         </main>
     )

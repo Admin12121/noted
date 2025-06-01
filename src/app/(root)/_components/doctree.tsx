@@ -62,7 +62,7 @@ const Doctree = ({ renderDocuments, handleCreateDocument }: { renderDocuments: a
                                 <Button variant={"ghost"} className='size-7 cursor-pointer dark:hover:bg-neutral-900 opacity-0 group-hover/item:opacity-100 transition duration-300 ease-in-out' onClick={() => handleCreateDocument({})}><Plus /></Button>
                             </TooltipTrigger>
                             <TooltipContent className="px-2 py-1 text-xs">
-                                Create a new page
+                                Add a page
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>

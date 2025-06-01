@@ -49,6 +49,13 @@ export const userAuthapi = createApi({
         headers: createHeaders(),
       }),
     }),
+    getDocumentdata: builder.query({
+      query: ({ id }) => ({
+        url: `api/documents/${id}`,
+        method: "GET",
+        headers: createHeaders(),
+      }),
+    }),
     archiveDocument: builder.mutation({
       query: ({ id }) => ({
         url: `api/documents/${id}`,
@@ -84,6 +91,7 @@ export const {
   useCreateDocumentMutation,
   useGetDocumentsQuery,
   useLazyGetDocumentsQuery,
+  useGetDocumentdataQuery,
   useArchiveDocumentMutation,
   useGetArchiveDocumentsQuery,
   useRecoverArchivedDocumentMutation,

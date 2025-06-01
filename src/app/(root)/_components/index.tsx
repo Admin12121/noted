@@ -231,7 +231,6 @@ export default function ResizableLayout({
 
     const renderDocuments = (parentId = "root") => {
         const docs = docState[parentId]?.data || [];
-        console.log(docs)
         return (
             <>
                 {docs.map((doc) => (
@@ -294,7 +293,7 @@ export default function ResizableLayout({
                                             <Button variant={"ghost"} size={"icon"} className="size-6 cursor-pointer dark:hover:bg-neutral-900" onClick={() => handleCreateDocument({ parentDocumentId: doc.id })}><Plus /></Button>
                                         </TooltipTrigger>
                                         <TooltipContent className="px-2 py-1 text-xs">
-                                            Create a new page
+                                            Add a page inside
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
@@ -340,7 +339,7 @@ export default function ResizableLayout({
                     )}`;
                 }}
                 className={cn(
-                    "h-[100dvh] min-w-[260px] group bg-[#202020]",
+                    "h-[100dvh] min-w-[260px] group bg-[#f8f8f7] dark:bg-[#202020]",
                     isCollapsed &&
                     "hidden",
                 )}
@@ -350,13 +349,22 @@ export default function ResizableLayout({
                 >
                     <UserModal detailed={true} user={user} signOut={signOut} className="hover:!bg-none !bg-transparent !px-0" variant={"default"} />
                     <span className='flex flex-row items-center gap-2'>
-                        <Button variant={"ghost"} size={"icon"} className='hidden group-hover:flex' onClick={() => collapseHandle()}>
-                            <ChevronsLeft className='!h-5 !w-5' />
-                        </Button>
                         <TooltipProvider delayDuration={0}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant={"ghost"} size={"icon"} onClick={() => handleCreateDocument({})}>
+                                    <Button variant={"ghost"} size={"icon"} className='hidden group-hover:flex hover:dark:!bg-neutral-900' onClick={() => collapseHandle()}>
+                                        <ChevronsLeft className='!h-5 !w-5' />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="px-2 py-1 text-xs">
+                                    Close sidebar
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                        <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant={"ghost"} size={"icon"} onClick={() => handleCreateDocument({})} className="hover:dark:!bg-neutral-900">
                                         <FilePenLine className='!h-5 !w-5' />
                                     </Button>
                                 </TooltipTrigger>
