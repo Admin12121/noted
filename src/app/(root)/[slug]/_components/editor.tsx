@@ -52,7 +52,8 @@ const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
             className='!bg-transparent'
             onChange={() => {
                 saveToStorage(editor.document);
-            }} />
+            }}
+        />
     );
 }
 

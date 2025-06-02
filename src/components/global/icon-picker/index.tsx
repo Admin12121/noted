@@ -25,8 +25,6 @@ const IconPicker = ({ onChange, children, asChild }: IconPickerProps) => {
     }
     const theme = ThemeMap[currentTheme];
 
-
-
     return (
         <Popover>
             <PopoverTrigger asChild={asChild}>

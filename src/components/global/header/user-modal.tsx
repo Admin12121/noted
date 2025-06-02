@@ -96,7 +96,7 @@ export default function UserModal({
         </DropdownMenuGroup> :
           <DropdownMenuGroup>
             <div className="p-2 flex flex-row items-center justify-between ">
-              <p>{user.email}</p>
+              <p>{user?.email}</p>
               <Button size={"icon"} variant={"ghost"} className="size-7"><EllipsisIcon /></Button>
             </div>
             <DropdownMenuItem >

@@ -387,7 +387,7 @@ export default function ResizableLayout({
                         orientation="vertical"
                         className={cn("mr-2 data-[orientation=vertical]:h-4 hidden", isCollapsed && "flex")}
                     />
-                    <Breadcrumb>
+                    {/* <Breadcrumb>
                         <BreadcrumbList>
                             <BreadcrumbItem>
                                 <BreadcrumbLink href="/documents">Home</BreadcrumbLink>
@@ -411,7 +411,7 @@ export default function ResizableLayout({
                                 </React.Fragment>
                             ))}
                         </BreadcrumbList>
-                    </Breadcrumb>
+                    </Breadcrumb> */}
                 </header>
                 {children}
             </ResizablePanel>
