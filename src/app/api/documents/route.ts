@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const { title, parentDocumentId, isArchived, isPublic } = parsed.data;
-    await db.document.create({
+    const created = await db.document.create({
       data: {
         title,
         parentDocumentId: parentDocumentId || null,
@@ -41,9 +41,15 @@ export async function POST(request: NextRequest) {
         isPublic: isPublic || false,
         userId,
       },
+      select: {
+        id: true,
+        title: true,
+        icon: true,
+        parentDocumentId: true,
+      },
     });
     return NextResponse.json(
-      { message: "Document created successfully", },
+      { message: "Document created successfully", data: created },
       { status: 201 }
     );
   } catch (error: any) {
@@ -88,7 +94,9 @@ export async function GET(req: Request) {
           parentDocumentId: true,
           _count: {
             select: {
-              childDocuments: true,
+              childDocuments: {
+                where: { isArchived: false },
+              },
             },
           },
         },

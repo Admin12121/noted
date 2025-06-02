@@ -10,19 +10,9 @@ import { cn, delay } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import UserModal from '@/components/global/header/user-modal';
 import { useAuthUser } from '@/hooks/use-auth-user';
-import { ChevronsLeft, CornerUpRight, Ellipsis, EllipsisVertical, File, FilePenLine, icons, Link2, MoveUpRight, Plus, SlashIcon, Trash } from 'lucide-react';
-import Image from 'next/image';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { ChevronsLeft, CornerUpRight, Ellipsis, File, FilePenLine, MoveUpRight, Plus, Trash } from 'lucide-react';
 import { Separator } from "@/components/ui/separator"
 import { usePathname } from "next/navigation";
-import Link from 'next/link';
 import { useCreateDocumentMutation, useLazyGetDocumentsQuery, useArchiveDocumentMutation } from '@/lib/store/api';
 import { toast } from 'sonner';
 import {
@@ -34,7 +24,6 @@ import {
 import Doctree from './doctree';
 import {
     Avatar,
-    AvatarFallback,
     AvatarImage,
 } from "@/components/ui/avatar"
 import { useRouter } from "next/navigation";
@@ -52,7 +41,6 @@ import {
 } from "lucide-react"
 
 
-
 interface SidebarProps {
     navCollapsedSize?: number;
     className?: string;
@@ -63,6 +51,7 @@ interface SidebarProps {
 type DocumentType = {
     id: string;
     title: string;
+    icon: string;
     parentDocumentId?: string;
     child?: boolean;
 };
@@ -118,26 +107,39 @@ export default function ResizableLayout({
             }
             const response = await createDocument({ data }).unwrap();
             await delay(500);
-            if (response) {
+            if (response && response.data) {
                 toast.success("Document created successfully!", {
                     id: "create-document",
                 });
-                const targetId = parentDocumentId || "root";
-                setDocState((prev) => ({
-                    ...prev,
-                    [targetId]: {
-                        ...(prev[targetId] || {
-                            page: 1,
-                            limit: 10,
-                            expanded: true,
-                            data: [],
-                            hasNext: true,
-                        }),
-                        page: 1,
-                    },
-                }));
                 await delay(500);
-                fetchDocs(targetId);
+                const targetId = parentDocumentId || "root";
+                setDocState((prev) => {
+                    const prevDocs = prev[targetId]?.data || [];
+                    return {
+                        ...prev,
+                        [targetId]: {
+                            ...(prev[targetId] || {
+                                page: 1,
+                                limit: 10,
+                                expanded: true,
+                                data: [],
+                                hasNext: true,
+                            }),
+                            data: [response.data, ...prevDocs],
+                        },
+                    };
+                });
+                if (parentDocumentId) {
+                    setDocState((prev) => {
+                        const newState = { ...prev };
+                        Object.keys(newState).forEach((key) => {
+                            newState[key].data = newState[key].data.map(doc =>
+                                doc.id === parentDocumentId ? { ...doc, child: true } : doc
+                            );
+                        });
+                        return newState;
+                    });
+                }
             } else {
                 toast.error("Failed to create document.", {
                     id: "create-document",
@@ -198,7 +200,7 @@ export default function ResizableLayout({
         fetchDocs(parentId);
     };
 
-    const handleDeleteDocument = async (id: string) => {
+    const handleDeleteDocument = async (id: string, parentId?: string) => {
         try {
             toast.loading("Moving to Trash...", {
                 id: "create-document",
@@ -220,6 +222,15 @@ export default function ResizableLayout({
                 Object.keys(newState).forEach((key) => {
                     newState[key].data = newState[key].data.filter((doc) => doc.id !== id);
                 });
+                if (parentId && newState[parentId]) {
+                    if (newState[parentId].data.length === 0) {
+                        Object.keys(newState).forEach((key) => {
+                            newState[key].data = newState[key].data.map(doc =>
+                                doc.id === parentId ? { ...doc, child: false } : doc
+                            );
+                        });
+                    }
+                }
                 return newState;
             });
         } catch (error) {
@@ -229,79 +240,84 @@ export default function ResizableLayout({
     };
 
 
-    const renderDocuments = (parentId = "root") => {
+    const renderDocuments = (parentId = "root", level = 0) => {
         const docs = docState[parentId]?.data || [];
         return (
             <>
-                {docs.map((doc) => (
-                    <div key={doc.id}>
-                        <div
-                            className={cn("group/item cursor-pointer bg-gray-200 dark:bg-[#FFFFFF0E] p-2 rounded-md justify-between flex", doc.parentDocumentId && "ml-5 mt-2")}
-                        >
-                            <span className="flex gap-2 items-center">
-                                <Avatar className="rounded-md bg-[#191919] items-center justify-center" onClick={() => toggleExpand(doc.id)}>
-                                    <AvatarImage src="/icons/arrow-left.svg" className={cn("invert opacity-0 transition duration-300 rotate-180 h-5 w-5 group-hover/item:opacity-100")} alt="Kelly King" />
-                                    <File size={24} className={cn("absolute transition duration-300 group-hover/item:opacity-0")} />
-                                </Avatar>
-                                <p className="w-full h-full flex items-center" onClick={() => route.push(`/${doc.id}`)}>{doc.title}</p>
-                            </span>
-                            <span className="gap-2 flex items-center opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button size="icon" className="size-6" variant="ghost" aria-label="Open account menu">
-                                            <Ellipsis size={16} aria-hidden="true" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="max-w-96  w-[250px]">
-                                        <DropdownMenuLabel className="flex items-start gap-3">
-                                            <div className="flex min-w-0 flex-col">
-                                                <span className="text-muted-foreground truncate text-xs font-normal my-1">
-                                                    page
-                                                </span>
-                                            </div>
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuGroup>
-                                            <DropdownMenuItem>
-                                                <Linkit size={16} className="opacity-60" aria-hidden="true" />
-                                                <span>Copy Link</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem>
-                                                <FilePenLine size={16} className="opacity-60" aria-hidden="true" />
-                                                <span>Rename</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem>
-                                                <MoveUpRight size={16} className="opacity-60" aria-hidden="true" />
-                                                <span>Move to </span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDeleteDocument(doc.id)}>
-                                                <Trash size={16} className="opacity-60" aria-hidden="true" />
-                                                <span>Move to Trash</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuGroup>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuGroup>
-                                            <DropdownMenuItem>
-                                                <CornerUpRight size={16} className="opacity-60" aria-hidden="true" />
-                                                <span>Open in new tab</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuGroup>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <TooltipProvider delayDuration={0}>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant={"ghost"} size={"icon"} className="size-6 cursor-pointer dark:hover:bg-neutral-900" onClick={() => handleCreateDocument({ parentDocumentId: doc.id })}><Plus /></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent className="px-2 py-1 text-xs">
-                                            Add a page inside
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </span>
+                {docs.map((doc) => {
+                    const isExpandable = !!doc.child;
+                    const isExpanded = !!docState[doc.id]?.expanded;
+                    return (
+                        <div key={doc.id}>
+                            <div
+                                className={cn("group/item cursor-pointer bg-gray-200 dark:bg-[#FFFFFF0E] p-2 rounded-md justify-between flex", level > 0 && `mt-2`)}
+                                style={{ marginLeft: `${level * 16}px` }}
+                            >
+                                <span className="flex gap-2 items-center">
+                                    <Avatar className="rounded-md bg-[#191919] items-center justify-center" onClick={() => doc.child && toggleExpand(doc.id)}>
+                                        {isExpandable && <AvatarImage src="/icons/arrow-left.svg" className={cn("invert opacity-0 transition duration-300 rotate-180 h-5 w-5 group-hover/item:opacity-100", isExpanded && "rotate-[275deg]")} alt="Kelly King" />}
+                                        {doc.icon ? <p>{doc.icon}</p> : <File size={24} className={cn("absolute transition duration-300 ", isExpandable && "group-hover/item:opacity-0")} />}
+                                    </Avatar>
+                                    <p className="w-full h-full flex items-center" onClick={() => route.push(`/${doc.id}`)}>{doc.title}</p>
+                                </span>
+                                <span className="gap-2 flex items-center opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button size="icon" className="size-6" variant="ghost" aria-label="Open account menu">
+                                                <Ellipsis size={16} aria-hidden="true" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="max-w-96  w-[250px]">
+                                            <DropdownMenuLabel className="flex items-start gap-3">
+                                                <div className="flex min-w-0 flex-col">
+                                                    <span className="text-muted-foreground truncate text-xs font-normal my-1">
+                                                        page
+                                                    </span>
+                                                </div>
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuGroup>
+                                                <DropdownMenuItem>
+                                                    <Linkit size={16} className="opacity-60" aria-hidden="true" />
+                                                    <span>Copy Link</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <FilePenLine size={16} className="opacity-60" aria-hidden="true" />
+                                                    <span>Rename</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <MoveUpRight size={16} className="opacity-60" aria-hidden="true" />
+                                                    <span>Move to </span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDeleteDocument(doc.id, doc.parentDocumentId)}>
+                                                    <Trash size={16} className="opacity-60" aria-hidden="true" />
+                                                    <span>Move to Trash</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuGroup>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuGroup>
+                                                <DropdownMenuItem>
+                                                    <CornerUpRight size={16} className="opacity-60" aria-hidden="true" />
+                                                    <span>Open in new tab</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuGroup>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    <TooltipProvider delayDuration={0}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant={"ghost"} size={"icon"} className="size-6 cursor-pointer dark:hover:bg-neutral-900" onClick={() => handleCreateDocument({ parentDocumentId: doc.id })}><Plus /></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="px-2 py-1 text-xs">
+                                                Add a page inside
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </span>
+                            </div>
+                            {docState[doc.id]?.expanded && renderDocuments(doc.id, level + 1)}
                         </div>
-                        {docState[doc.id]?.expanded && renderDocuments(doc.id)}
-                    </div>
-                ))}
+                    )
+                })}
                 {docState[parentId]?.hasNext && (
                     <button
                         onClick={() => loadMore(parentId)}
@@ -387,31 +403,6 @@ export default function ResizableLayout({
                         orientation="vertical"
                         className={cn("mr-2 data-[orientation=vertical]:h-4 hidden", isCollapsed && "flex")}
                     />
-                    {/* <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/documents">Home</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            {pathSegments.map((segment, index) => (
-                                <React.Fragment key={index}>
-                                    <BreadcrumbSeparator>
-                                        <SlashIcon className="-rotate-[25deg] text-foreground/50" />
-                                    </BreadcrumbSeparator>
-                                    <BreadcrumbItem>
-                                        {index === pathSegments.length - 1 ? (
-                                            <BreadcrumbPage>{segment}</BreadcrumbPage>
-                                        ) : (
-                                            <Link
-                                                href={`/${pathSegments.slice(0, index + 1).join("/")}`}
-                                            >
-                                                {segment}
-                                            </Link>
-                                        )}
-                                    </BreadcrumbItem>
-                                </React.Fragment>
-                            ))}
-                        </BreadcrumbList>
-                    </Breadcrumb> */}
                 </header>
                 {children}
             </ResizablePanel>
