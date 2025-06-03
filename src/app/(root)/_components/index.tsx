@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -51,7 +51,6 @@ import {
 } from '@/lib/store/slice/documents';
 import { motion, AnimatePresence } from "framer-motion";
 import { addToTrash } from '@/lib/store/slice/archive';
-import DocumentSkeleton from "@/components/global/doc-skeleton";
 import Spinner from "@/components/ui/spinner";
 
 interface SidebarProps {
@@ -77,7 +76,6 @@ export default function ResizableLayout({
     const docState = useSelector((state: RootState) => state.documents);
 
     const [loadingNodes, setLoadingNodes] = React.useState<{ [key: string]: boolean }>({});
-    const loadingTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
     const [triggerGetDocuments] = useLazyGetDocumentsQuery();
     const [deletePage] = useArchiveDocumentMutation();
@@ -220,6 +218,14 @@ export default function ResizableLayout({
     const renderDocuments = (parentId = "root", level = 0) => {
         const docs = docState[parentId]?.data || [];
         const isLoading = loadingNodes[parentId];
+
+        if (docs.length === 0 && parentId !== "root") {
+            return (
+                <div className="w-full flex items-center justify-center pt-3  px-4">
+                    <p className="text-muted-foreground">No document found.</p>
+                </div>
+            )
+        }
         return (
             <AnimatePresence initial={false}>
                 {
@@ -235,8 +241,8 @@ export default function ResizableLayout({
                                     key={doc.id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2, delay: idx * 0.02 }}
                                     layout="position" >
                                     <div
                                         className={cn("group/item cursor-pointer bg-gray-200 dark:bg-[#FFFFFF0E] p-2 rounded-md justify-between flex", level > 0 && `mt-2`)}
@@ -245,7 +251,7 @@ export default function ResizableLayout({
                                         <span className="flex gap-2 items-center">
                                             <Avatar className="rounded-md bg-[#191919] items-center justify-center" onClick={() => toggleExpand(doc.id)}>
                                                 <AvatarImage src="/icons/arrow-left.svg" className={cn("invert opacity-0 transition duration-300 rotate-180 h-5 w-5 group-hover/item:opacity-100", isExpanded && "rotate-[275deg]")} alt="Kelly King" />
-                                                {doc.icon ? <p>{doc.icon}</p> : <File size={24} className={cn("absolute transition duration-300 group-hover/item:opacity-0")} />}
+                                                {doc.icon ? <p className={cn("absolute transition duration-300 group-hover/item:opacity-0")}>{doc.icon}</p> : <File size={24} className={cn("absolute transition duration-300 group-hover/item:opacity-0")} />}
                                             </Avatar>
                                             <p className="w-full h-full flex items-center" onClick={() => route.push(`/${doc.id}`)}>{doc.title}</p>
                                         </span>

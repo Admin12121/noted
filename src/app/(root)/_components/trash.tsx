@@ -153,7 +153,7 @@ export default function TrashPopOver() {
                         </div>
                     </div>
                 </div>
-                <div className="relative flex items-center h-[450px] flex-col gap-2 overflow-hidden overflow-y-auto">
+                <div className="relative flex items-center h-[450px] flex-col gap-2 overflow-hidden overflow-y-auto pb-8">
                     {isDataLoading && (
                         <div className="flex items-center justify-center w-full h-full">
                             <Spinner className="size-8" />
@@ -194,8 +194,10 @@ export default function TrashPopOver() {
                             <p>No data available</p>
                         </span>
                     }
-                    <span className="absolute bg-neutral-800 h-7 bottom-0 flex w-full rounded-sm items-center justify-between text-xs px-2">
-                        Pages in Trash for over 30days will be permanently deleted. <CircleHelp size={15} />
+                    <span className="fixed bottom-0 px-1 w-full pb-1">
+                        <span className="bg-neutral-800 h-7 flex w-full rounded-sm items-center justify-between text-xs px-2">
+                            Pages in Trash for over 30days will be permanently deleted. <CircleHelp size={15} />
+                        </span>
                     </span>
                 </div>
             </PopoverContent>

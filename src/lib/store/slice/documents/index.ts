@@ -74,7 +74,16 @@ const documentsSlice = createSlice({
             if (state[action.payload.parentId]) {
                 state[action.payload.parentId].page = action.payload.page;
             }
-        }
+        },
+        updateDocumentMeta(state, action: PayloadAction<{ id: string; title?: string; icon?: string }>) {
+            Object.keys(state).forEach((key) => {
+                state[key].data = state[key].data.map(doc =>
+                    doc.id === action.payload.id
+                        ? { ...doc, ...action.payload }
+                        : doc
+                );
+            });
+        },
     },
 });
 
@@ -85,6 +94,7 @@ export const {
     updateChildFlag,
     removeDocument,
     setPage,
+    updateDocumentMeta
 } = documentsSlice.actions;
 
 export default documentsSlice.reducer;
