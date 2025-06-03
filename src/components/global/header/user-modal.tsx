@@ -104,7 +104,7 @@ export default function UserModal({
               <span className={cn(buttonVariants({ variant: "default" }), "size-8")}>
                 <UserRound />
               </span>
-              <p className="text-[1rem]">{user.name} </p>
+              <p className="text-[1rem]">{user?.name} </p>
             </DropdownMenuItem>
             <DropdownMenuItem >
               <span className={cn(buttonVariants({ variant: "default", }), "size-8")}>

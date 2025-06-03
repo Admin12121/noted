@@ -1,12 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { userAuthapi } from './api'
-import documentReducer from "./documentslice";
+import documentReducer from './slice/documents'
+import archiveReducer from './slice/archive'
 
-export const store = () =>{
-  return  configureStore({
+export const store = () => {
+  return configureStore({
     reducer: {
       [userAuthapi.reducerPath]: userAuthapi.reducer,
       documents: documentReducer,
+      archive: archiveReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(userAuthapi.middleware),

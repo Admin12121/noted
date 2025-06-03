@@ -25,13 +25,21 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/lib/store';
+import { setTrash, removeFromTrash } from '@/lib/store/slice/archive';
+import { addDocument } from '@/lib/store/slice/documents';
+import { DocumentType } from '@/lib/store/slice/archive';
 
 export default function TrashPopOver() {
     const [inputValue, setInputValue] = useState("")
-    const [trashdata, setTrashData] = useState<[] | undefined>(undefined)
     const [recover] = useRecoverArchivedDocumentMutation();
     const [deleteDocument] = useDeleteDocumentMutation();
     const [isLoading, setIsLoading] = useState<boolean>(false)
+
+
+    const dispatch = useDispatch();
+    const trashdata = useSelector((state: RootState) => state.archive.data);
 
     useEffect(() => {
         if (inputValue) {
@@ -54,22 +62,27 @@ export default function TrashPopOver() {
 
     useEffect(() => {
         if (data) {
-            setTrashData(data.data)
+            dispatch(setTrash(data.data));
         }
     }, [data])
 
-    const HandleRecover = async (id: string) => {
+    const HandleRecover = async (doc: DocumentType) => {
         try {
             toast.loading("Recovering document...", {
                 id: "recover-toast",
             });
             await delay(500)
-            const response = await recover({ id }).unwrap();
+            const response = await recover({ id: doc.id }).unwrap();
             await delay(500)
             if (response) {
                 toast.success("Document recovered successfully!", {
                     id: "recover-toast",
                 });
+                const parentId = doc.parentDocumentId;
+                const docState = (window as any).store?.getState().documents || {};
+                if (parentId && docState[parentId]) {
+                    dispatch(addDocument({ parentId: doc.parentDocumentId || 'root', doc }));
+                }
                 refetch();
             }
         } catch (error) {
@@ -89,6 +102,7 @@ export default function TrashPopOver() {
                 toast.success("Document deleted successfully!", {
                     id: "delete-toast",
                 });
+                dispatch(removeFromTrash(id));
                 refetch();
             }
         } catch (error) {
@@ -145,17 +159,17 @@ export default function TrashPopOver() {
                             <Spinner className="size-8" />
                         </div>
                     )}
-                    {Array.isArray(trashdata) && trashdata.length > 0 ? trashdata.map((trashdata: any) => (
+                    {Array.isArray(trashdata) && trashdata.length > 0 ? trashdata.map((data: DocumentType) => (
                         <div
-                            key={trashdata.id}
+                            key={data.id}
                             className="hover:bg-accent rounded-md px-3 py-2 text-sm transition-colors flex items-center justify-between w-full"
                         >
                             <div className="relative flex items-center gap-2">
                                 <File />
-                                {trashdata.title}
+                                {data.title}
                             </div>
                             <div className="flex items-center gap-1">
-                                <Button variant={"ghost"} className="size-7 hover:!bg-neutral-900" onClick={() => HandleRecover(trashdata.id)}><Undo2 /></Button>
+                                <Button variant={"ghost"} className="size-7 hover:!bg-neutral-900" onClick={() => HandleRecover(data)}><Undo2 /></Button>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant={"ghost"} className="size-7 hover:!bg-neutral-900"><Trash /></Button>
@@ -169,7 +183,7 @@ export default function TrashPopOver() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => HandleDelete(trashdata.id)}>Delete</AlertDialogAction>
+                                            <AlertDialogAction onClick={() => HandleDelete(data.id)}>Delete</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>

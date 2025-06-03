@@ -32,6 +32,7 @@ export async function GET(req: Request) {
           id: true,
           title: true,
           icon: true,
+          parentDocumentId: true,
         },
       }),
       db.document.count({

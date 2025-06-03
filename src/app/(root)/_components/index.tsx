@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
     ResizableHandle,
     ResizablePanel,
@@ -12,7 +12,6 @@ import UserModal from '@/components/global/header/user-modal';
 import { useAuthUser } from '@/hooks/use-auth-user';
 import { ChevronsLeft, CornerUpRight, Ellipsis, File, FilePenLine, MoveUpRight, Plus, Trash } from 'lucide-react';
 import { Separator } from "@/components/ui/separator"
-import { usePathname } from "next/navigation";
 import { useCreateDocumentMutation, useLazyGetDocumentsQuery, useArchiveDocumentMutation } from '@/lib/store/api';
 import { toast } from 'sonner';
 import {
@@ -39,7 +38,21 @@ import {
 import {
     Link as Linkit,
 } from "lucide-react"
-
+import { RootState } from '@/lib/store';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+    setDocuments,
+    setExpanded,
+    addDocument,
+    updateChildFlag,
+    removeDocument,
+    setPage,
+    DocumentType,
+} from '@/lib/store/slice/documents';
+import { motion, AnimatePresence } from "framer-motion";
+import { addToTrash } from '@/lib/store/slice/archive';
+import DocumentSkeleton from "@/components/global/doc-skeleton";
+import Spinner from "@/components/ui/spinner";
 
 interface SidebarProps {
     navCollapsedSize?: number;
@@ -47,14 +60,6 @@ interface SidebarProps {
     layout?: string;
     collapsed?: string;
 }
-
-type DocumentType = {
-    id: string;
-    title: string;
-    icon: string;
-    parentDocumentId?: string;
-    child?: boolean;
-};
 
 export default function ResizableLayout({
     layout,
@@ -68,17 +73,11 @@ export default function ResizableLayout({
 
     const route = useRouter();
 
-    const [docState, setDocState] = useState<{
-        [parentId: string]: {
-            page: number;
-            limit: number;
-            expanded: boolean;
-            data: DocumentType[];
-            hasNext: boolean;
-        };
-    }>({
-        root: { page: 1, limit: 10, expanded: true, data: [], hasNext: true },
-    });
+    const dispatch = useDispatch();
+    const docState = useSelector((state: RootState) => state.documents);
+
+    const [loadingNodes, setLoadingNodes] = React.useState<{ [key: string]: boolean }>({});
+    const loadingTimeouts = useRef<{ [key: string]: NodeJS.Timeout }>({});
 
     const [triggerGetDocuments] = useLazyGetDocumentsQuery();
     const [deletePage] = useArchiveDocumentMutation();
@@ -92,9 +91,6 @@ export default function ResizableLayout({
             !isCollapsed
         )}`;
     }
-
-    const path = usePathname();
-    const pathSegments = path.split("/").filter((segment) => segment);
 
     const handleCreateDocument = async ({ parentDocumentId }: { parentDocumentId?: string }) => {
         try {
@@ -111,34 +107,17 @@ export default function ResizableLayout({
                 toast.success("Document created successfully!", {
                     id: "create-document",
                 });
-                await delay(500);
+                route.push(`/${response.data.id}`);
                 const targetId = parentDocumentId || "root";
-                setDocState((prev) => {
-                    const prevDocs = prev[targetId]?.data || [];
-                    return {
-                        ...prev,
-                        [targetId]: {
-                            ...(prev[targetId] || {
-                                page: 1,
-                                limit: 10,
-                                expanded: true,
-                                data: [],
-                                hasNext: true,
-                            }),
-                            data: [response.data, ...prevDocs],
-                        },
-                    };
-                });
+                dispatch(addDocument({
+                    parentId: targetId,
+                    doc: response.data,
+                }));
                 if (parentDocumentId) {
-                    setDocState((prev) => {
-                        const newState = { ...prev };
-                        Object.keys(newState).forEach((key) => {
-                            newState[key].data = newState[key].data.map(doc =>
-                                doc.id === parentDocumentId ? { ...doc, child: true } : doc
-                            );
-                        });
-                        return newState;
-                    });
+                    dispatch(updateChildFlag({
+                        parentId: parentDocumentId,
+                        child: true,
+                    }));
                 }
             } else {
                 toast.error("Failed to create document.", {
@@ -151,8 +130,8 @@ export default function ResizableLayout({
     };
 
     const fetchDocs = async (parentId = "root") => {
+        setLoadingNodes((prev) => ({ ...prev, [parentId]: true }));
         const { page, limit } = docState[parentId] || { page: 1, limit: 10 };
-
         try {
             const res = await triggerGetDocuments({
                 params: {
@@ -161,28 +140,25 @@ export default function ResizableLayout({
                     limit,
                 },
             }).unwrap();
-
-            setDocState((prev) => ({
-                ...prev,
-                [parentId]: {
-                    ...prev[parentId],
-                    data: page === 1 ? res.data : [...(prev[parentId]?.data || []), ...res.data],
-                    hasNext: res.next ?? false,
-                },
+            await delay(500);
+            dispatch(setDocuments({
+                parentId,
+                data: res.data,
+                hasNext: res.next ?? false,
+                page,
+                limit,
             }));
         } catch (err) {
             console.error("Error fetching documents:", err);
+        } finally {
+            setLoadingNodes((prev) => ({ ...prev, [parentId]: false }));
         }
     };
 
     const toggleExpand = (parentId: string) => {
-        setDocState((prev) => ({
-            ...prev,
-            [parentId]: {
-                ...prev[parentId],
-                expanded: !prev[parentId]?.expanded,
-            },
-        }));
+        dispatch(
+            setExpanded({ parentId, expanded: !docState[parentId]?.expanded })
+        )
 
         if (!docState[parentId]?.data?.length) {
             fetchDocs(parentId);
@@ -190,23 +166,17 @@ export default function ResizableLayout({
     };
 
     const loadMore = (parentId: string) => {
-        setDocState((prev) => ({
-            ...prev,
-            [parentId]: {
-                ...prev[parentId],
-                page: prev[parentId].page + 1,
-            },
-        }));
+        dispatch(setPage({ parentId, page: docState[parentId].page + 1 }));
         fetchDocs(parentId);
     };
 
-    const handleDeleteDocument = async (id: string, parentId?: string) => {
+    const handleMovetoTrash = async (doc: DocumentType) => {
         try {
             toast.loading("Moving to Trash...", {
                 id: "create-document",
             });
             await delay(500);
-            const response = await deletePage({ id }).unwrap();
+            const response = await deletePage({ id: doc.id }).unwrap();
             if (!response) {
                 toast.error("Failed to move document to Trash.", {
                     id: "create-document",
@@ -217,116 +187,149 @@ export default function ResizableLayout({
                 id: "create-document",
             });
             await delay(500);
-            setDocState((prev) => {
-                const newState = { ...prev };
-                Object.keys(newState).forEach((key) => {
-                    newState[key].data = newState[key].data.filter((doc) => doc.id !== id);
+            dispatch(removeDocument({ id: doc.id, parentId: doc.parentDocumentId }));
+            if (doc.child) {
+                Object.values(docState).forEach(group => {
+                    group.data.forEach(childDoc => {
+                        if (childDoc.parentDocumentId === doc.id) {
+                            handleMovetoTrash(childDoc);
+                        }
+                    });
                 });
-                if (parentId && newState[parentId]) {
-                    if (newState[parentId].data.length === 0) {
-                        Object.keys(newState).forEach((key) => {
-                            newState[key].data = newState[key].data.map(doc =>
-                                doc.id === parentId ? { ...doc, child: false } : doc
-                            );
-                        });
-                    }
+            }
+            dispatch(addToTrash(doc));
+            if (doc.parentDocumentId) {
+                const parentGroup = docState[doc.parentDocumentId];
+                if (parentGroup && parentGroup.data.filter(d => d.parentDocumentId === doc.parentDocumentId).length === 0) {
+                    dispatch(updateChildFlag({ parentId: doc.parentDocumentId, child: false }));
                 }
-                return newState;
-            });
+            }
+            if (doc.parentDocumentId) {
+                dispatch(updateChildFlag({
+                    parentId: doc.parentDocumentId,
+                    child: false,
+                }));
+            }
+
         } catch (error) {
             console.error("Failed to delete document:", error);
             toast.error("Failed to delete document.");
         }
     };
 
-
     const renderDocuments = (parentId = "root", level = 0) => {
         const docs = docState[parentId]?.data || [];
+        const isLoading = loadingNodes[parentId];
         return (
-            <>
-                {docs.map((doc) => {
-                    const isExpandable = !!doc.child;
-                    const isExpanded = !!docState[doc.id]?.expanded;
-                    return (
-                        <div key={doc.id}>
-                            <div
-                                className={cn("group/item cursor-pointer bg-gray-200 dark:bg-[#FFFFFF0E] p-2 rounded-md justify-between flex", level > 0 && `mt-2`)}
-                                style={{ marginLeft: `${level * 16}px` }}
-                            >
-                                <span className="flex gap-2 items-center">
-                                    <Avatar className="rounded-md bg-[#191919] items-center justify-center" onClick={() => doc.child && toggleExpand(doc.id)}>
-                                        {isExpandable && <AvatarImage src="/icons/arrow-left.svg" className={cn("invert opacity-0 transition duration-300 rotate-180 h-5 w-5 group-hover/item:opacity-100", isExpanded && "rotate-[275deg]")} alt="Kelly King" />}
-                                        {doc.icon ? <p>{doc.icon}</p> : <File size={24} className={cn("absolute transition duration-300 ", isExpandable && "group-hover/item:opacity-0")} />}
-                                    </Avatar>
-                                    <p className="w-full h-full flex items-center" onClick={() => route.push(`/${doc.id}`)}>{doc.title}</p>
-                                </span>
-                                <span className="gap-2 flex items-center opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button size="icon" className="size-6" variant="ghost" aria-label="Open account menu">
-                                                <Ellipsis size={16} aria-hidden="true" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="max-w-96  w-[250px]">
-                                            <DropdownMenuLabel className="flex items-start gap-3">
-                                                <div className="flex min-w-0 flex-col">
-                                                    <span className="text-muted-foreground truncate text-xs font-normal my-1">
-                                                        page
-                                                    </span>
-                                                </div>
-                                            </DropdownMenuLabel>
-                                            <DropdownMenuGroup>
-                                                <DropdownMenuItem>
-                                                    <Linkit size={16} className="opacity-60" aria-hidden="true" />
-                                                    <span>Copy Link</span>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem>
-                                                    <FilePenLine size={16} className="opacity-60" aria-hidden="true" />
-                                                    <span>Rename</span>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem>
-                                                    <MoveUpRight size={16} className="opacity-60" aria-hidden="true" />
-                                                    <span>Move to </span>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDeleteDocument(doc.id, doc.parentDocumentId)}>
-                                                    <Trash size={16} className="opacity-60" aria-hidden="true" />
-                                                    <span>Move to Trash</span>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuGroup>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuGroup>
-                                                <DropdownMenuItem>
-                                                    <CornerUpRight size={16} className="opacity-60" aria-hidden="true" />
-                                                    <span>Open in new tab</span>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuGroup>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <TooltipProvider delayDuration={0}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button variant={"ghost"} size={"icon"} className="size-6 cursor-pointer dark:hover:bg-neutral-900" onClick={() => handleCreateDocument({ parentDocumentId: doc.id })}><Plus /></Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent className="px-2 py-1 text-xs">
-                                                Add a page inside
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </span>
-                            </div>
-                            {docState[doc.id]?.expanded && renderDocuments(doc.id, level + 1)}
+            <AnimatePresence initial={false}>
+                {
+                    isLoading ?
+                        <div className="w-full flex items-center justify-center p-4">
+                            <Spinner size="sm" className="invert" />
                         </div>
-                    )
-                })}
-                {docState[parentId]?.hasNext && (
+                        :
+                        docs.map((doc, idx) => {
+                            const isExpanded = !!docState[doc.id]?.expanded;
+                            return (
+                                <motion.div
+                                    key={doc.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    layout="position" >
+                                    <div
+                                        className={cn("group/item cursor-pointer bg-gray-200 dark:bg-[#FFFFFF0E] p-2 rounded-md justify-between flex", level > 0 && `mt-2`)}
+                                        style={{ marginLeft: `${level * 16}px` }}
+                                    >
+                                        <span className="flex gap-2 items-center">
+                                            <Avatar className="rounded-md bg-[#191919] items-center justify-center" onClick={() => toggleExpand(doc.id)}>
+                                                <AvatarImage src="/icons/arrow-left.svg" className={cn("invert opacity-0 transition duration-300 rotate-180 h-5 w-5 group-hover/item:opacity-100", isExpanded && "rotate-[275deg]")} alt="Kelly King" />
+                                                {doc.icon ? <p>{doc.icon}</p> : <File size={24} className={cn("absolute transition duration-300 group-hover/item:opacity-0")} />}
+                                            </Avatar>
+                                            <p className="w-full h-full flex items-center" onClick={() => route.push(`/${doc.id}`)}>{doc.title}</p>
+                                        </span>
+                                        <span className="gap-2 flex items-center opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button size="icon" className="size-6" variant="ghost" aria-label="Open account menu">
+                                                        <Ellipsis size={16} aria-hidden="true" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="max-w-96  w-[250px]">
+                                                    <DropdownMenuLabel className="flex items-start gap-3">
+                                                        <div className="flex min-w-0 flex-col">
+                                                            <span className="text-muted-foreground truncate text-xs font-normal my-1">
+                                                                page
+                                                            </span>
+                                                        </div>
+                                                    </DropdownMenuLabel>
+                                                    <DropdownMenuGroup>
+                                                        <DropdownMenuItem>
+                                                            <Linkit size={16} className="opacity-60" aria-hidden="true" />
+                                                            <span>Copy Link</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem>
+                                                            <FilePenLine size={16} className="opacity-60" aria-hidden="true" />
+                                                            <span>Rename</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem>
+                                                            <MoveUpRight size={16} className="opacity-60" aria-hidden="true" />
+                                                            <span>Move to </span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleMovetoTrash(doc)}>
+                                                            <Trash size={16} className="opacity-60" aria-hidden="true" />
+                                                            <span>Move to Trash</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuGroup>
+                                                        <DropdownMenuItem>
+                                                            <CornerUpRight size={16} className="opacity-60" aria-hidden="true" />
+                                                            <span>Open in new tab</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <TooltipProvider delayDuration={0}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant={"ghost"} size={"icon"} className="size-6 cursor-pointer dark:hover:bg-neutral-900" onClick={() => handleCreateDocument({ parentDocumentId: doc.id })}><Plus /></Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="px-2 py-1 text-xs">
+                                                        Add a page inside
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </span>
+                                    </div>
+                                    <AnimatePresence>
+                                        {docState[doc.id]?.expanded &&
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.2 }}
+                                                style={{ overflow: "hidden" }}
+                                            >
+
+                                                {renderDocuments(doc.id, level + 1)}
+                                            </motion.div>}
+                                    </AnimatePresence>
+                                </motion.div>
+                            )
+                        })
+                }
+
+                {/* {docState[parentId]?.hasNext && (
                     <button
                         onClick={() => loadMore(parentId)}
                         className="text-sm text-blue-500 hover:underline ml-4 mt-2"
                     >
                         Load More
                     </button>
-                )}
-            </>
+                )} */}
+            </AnimatePresence>
         );
     };
 

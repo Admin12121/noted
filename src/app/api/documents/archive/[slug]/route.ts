@@ -5,78 +5,60 @@ import { db } from "@/lib/db";
 export async function PATCH(request: NextRequest, context: { params: { slug: string } }) {
   try {
     const userId = await getValidSessionUserId();
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized or session expired" },
-        { status: 401 }
-      );
-    }
+    if (!userId) return NextResponse.json({ error: "Unauthorized or session expired" }, { status: 401 });
 
     const userIdStr = userId as string;
 
-    const params = await context.params;
-    const documentId = params.slug;
-    if (!documentId) {
-      return NextResponse.json(
-        { error: "Document ID (slug) is required" },
-        { status: 400 }
-      );
-    }
+    const documentId = context.params.slug;
+    if (!documentId) return NextResponse.json({ error: "Document ID is required" }, { status: 400 });
 
-    const document = await db.document.findFirst({
-      where: { id: documentId, userId },
-      include: { childDocuments: true, parentDocument: true },
+    const doc = await db.document.findUnique({
+      where: { id: documentId },
+      include: { parentDocument: true },
     });
 
-    if (!document) {
-      return NextResponse.json(
-        { error: "Document not found" },
-        { status: 404 }
-      );
-    }
-    
+    if (!doc || doc.userId !== userId) return NextResponse.json({ error: "Document not found" }, { status: 404 });
 
-    async function recoverTree(docId: string) {
-      await db.document.update({
+    async function recover(docId: string) {
+      const currDoc = await db.document.findUnique({
         where: { id: docId },
-        data: { isArchived: false },
+        include: { parentDocument: true },
       });
+
+      if (!currDoc) return;
+
+      if (currDoc.parentDocumentId && currDoc.parentDocument?.isArchived) {
+        await db.document.update({
+          where: { id: currDoc.id },
+          data: {
+            parentDocumentId: null,
+            isArchived: false,
+          },
+        });
+      } else {
+        await db.document.update({
+          where: { id: currDoc.id },
+          data: {
+            isArchived: false,
+          },
+        });
+      }
+
       const children = await db.document.findMany({
-        where: { parentDocumentId: docId, userId: userIdStr },
+        where: { parentDocumentId: currDoc.id, userId: userIdStr },
         select: { id: true },
       });
+
       for (const child of children) {
-        await recoverTree(child.id);
+        await recover(child.id);
       }
     }
 
-    if (document.parentDocument && document.parentDocument.isArchived) {
-      await db.document.update({
-        where: { id: document.id },
-        data: { parentDocumentId: undefined, isArchived: false },
-      });
-    } else {
-      await db.document.update({
-        where: { id: document.id },
-        data: { isArchived: false },
-      });
-    }
+    await recover(documentId);
 
-    if (document.childDocuments.length > 0) {
-      for (const child of document.childDocuments) {
-        await recoverTree(child.id);
-      }
-    }
-
-    return NextResponse.json(
-      { message: "Document recovered successfully" },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "Recovered" }, { status: 200 });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 });
   }
 }
 
