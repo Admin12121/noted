@@ -251,7 +251,13 @@ export default function ResizableLayout({
                                         <span className="flex gap-2 items-center">
                                             <Avatar className="rounded-md bg-[#191919] items-center justify-center" onClick={() => toggleExpand(doc.id)}>
                                                 <AvatarImage src="/icons/arrow-left.svg" className={cn("invert opacity-0 transition duration-300 rotate-180 h-5 w-5 group-hover/item:opacity-100", isExpanded && "rotate-[275deg]")} alt="Kelly King" />
-                                                {doc.icon ? <p className={cn("absolute transition duration-300 group-hover/item:opacity-0")}>{doc.icon}</p> : <File size={24} className={cn("absolute transition duration-300 group-hover/item:opacity-0")} />}
+                                                {doc.icon ?
+                                                    doc.icon.startsWith("data:image") ? (
+                                                        <img src={doc.icon} alt="icon" className="w-14 h-14 object-contain absolute transition duration-300 group-hover/item:opacity-0 font-emoji" />
+                                                    ) : (
+                                                        <p className="text-6xl hover:opacity-75 transition font-emoji">{doc.icon}</p>
+                                                    )
+                                                    : <File size={24} className={cn("absolute transition duration-300 group-hover/item:opacity-0")} />}
                                             </Avatar>
                                             <p className="w-full h-full flex items-center" onClick={() => route.push(`/${doc.id}`)}>{doc.title}</p>
                                         </span>

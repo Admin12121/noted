@@ -13,8 +13,6 @@ import { useGetDocumentdataQuery } from '@/lib/store/api'
 
 const DocumentPage = ({ slug }: { slug: string }) => {
 
-
-    // const [updateDocument] = useUpdateDocumentMutation();
     const { data, isLoading, error } = useGetDocumentdataQuery({ id: slug }, { skip: !slug })
 
     const docState = useSelector((state: RootState) => state.documents);
@@ -29,23 +27,12 @@ const DocumentPage = ({ slug }: { slug: string }) => {
     });
     const meta = doc || data;
 
-    // React.useEffect(() => {
-    //     if (data) {
-    //         setMetadata({
-    //             title: data.title || "",
-    //             icon: data.icon || "",
-    //         });
-    //     }
-    // }, [data]);
-
     if (isLoading && !data) {
         return <div className='w-full h-full flex items-center justify-center'><Spinner size='sm' /></div>
     }
 
     const handleUpdateMeta = (val: { title?: string; icon?: string }) => {
-        console.log('before document meta:', val);
         if (!doc) return;
-        console.log('Updating document meta:', val);
         dispatch(updateDocumentMeta({ id: doc.id, ...val }));
     }
 

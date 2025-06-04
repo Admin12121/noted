@@ -122,6 +122,11 @@
   }
 }
 
+@layer utilities {
+  .font-emoji {
+    font-family: 'Twemoji Mozilla';
+  }
+}
 
 .bn-container {
   div {
