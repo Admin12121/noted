@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import ToolKit from './toolkit'
 import Editor from './editor'
 import Header from './header'
@@ -9,14 +9,15 @@ import Spinner from '@/components/ui/spinner'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@/lib/store'
 import { updateDocumentMeta } from '@/lib/store/slice/documents'
-import { useGetDocumentdataQuery } from '@/lib/store/api'
+import { useGetDocumentdataQuery, useUpdateDocumentMutation } from '@/lib/store/api'
+import { delay } from '@/lib/utils'
+import { toast } from 'sonner'
 
 const DocumentPage = ({ slug }: { slug: string }) => {
-
-    const { data, isLoading, error } = useGetDocumentdataQuery({ id: slug }, { skip: !slug })
-
-    const docState = useSelector((state: RootState) => state.documents);
-    console.log(docState)
+    const { data, isLoading } = useGetDocumentdataQuery({ id: slug }, { skip: !slug })
+    
+    const [updateDocument] = useUpdateDocumentMutation();
+    const [isSaving, setIsSaving] = useState(false);
     const dispatch = useDispatch();
     const doc = useSelector((state: RootState) => {
         for (const group of Object.values(state.documents)) {
@@ -25,6 +26,9 @@ const DocumentPage = ({ slug }: { slug: string }) => {
         }
         return null;
     });
+
+    const prevMetaRef = React.useRef<{ title?: string; icon?: string }>({});
+
     const meta = doc || data;
 
     if (isLoading && !data) {
@@ -36,13 +40,32 @@ const DocumentPage = ({ slug }: { slug: string }) => {
         dispatch(updateDocumentMeta({ id: doc.id, ...val }));
     }
 
+    const handleSaveMeta = async (val: { title?: string; icon?: string }) => {
+        if (!doc) return;
+        try {
+            await updateDocument({ id: doc.id, data: val }).unwrap();
+        } catch (error) {
+            toast.error(`Failed to save document metadata ${error}`);
+            dispatch(updateDocumentMeta({ id: doc.id, ...prevMetaRef.current }));
+        }
+    };
+
+    const handleContentChange = async (content: string) => {
+        setIsSaving(true);
+        if (!content) return;
+        await delay(500)
+        updateDocument({ id: slug, data: { content } });
+        await delay(500)
+        setIsSaving(false);
+    }
+
     return (
         <div className='pb-40 relative'>
-            {data && <Header title={meta.title} icon={meta.icon} setValue={handleUpdateMeta} />}
+            {data && <Header title={meta.title} icon={meta.icon} setValue={handleUpdateMeta} handleSaveMeta={handleSaveMeta} saving={isSaving}/>}
             <div className='h-[20vh]' />
             <div className='md:max-w-3xl lg:max-w-4xl mx-auto'>
-                {data && <ToolKit metaData={meta} data={data} setValue={handleUpdateMeta} />}
-                {data && <Editor initialContent={data.content} onChange={() => { }} />}
+                {data && <ToolKit metaData={meta} data={data} setValue={handleUpdateMeta} handleSaveMeta={handleSaveMeta} />}
+                {data && <Editor initialContent={data.content} slug={slug} onChange={handleContentChange} />}
             </div>
         </div>
     )

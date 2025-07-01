@@ -1,9 +1,10 @@
 import IconPicker from '@/components/global/icon-picker'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Image, Smile, X } from 'lucide-react'
+import { Image as Ima, Smile, X } from 'lucide-react'
 import React, { ElementRef } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
+import Image from 'next/image'
 
 interface ToolKitProps {
     metaData: {
@@ -17,9 +18,10 @@ interface ToolKitProps {
     };
     preview?: boolean;
     setValue: (val: { title?: string; icon?: string }) => void;
+    handleSaveMeta: (val: { title?: string; icon?: string }) => void;
 }
 
-const ToolKit = ({ metaData, data, preview, setValue }: ToolKitProps) => {
+const ToolKit = ({ metaData, data, preview, setValue, handleSaveMeta }: ToolKitProps) => {
     const inputRef = React.useRef<ElementRef<"textarea">>(null);
     const [isEditing, setIsEditing] = React.useState(false);
 
@@ -34,15 +36,11 @@ const ToolKit = ({ metaData, data, preview, setValue }: ToolKitProps) => {
 
     const disableInput = () => { setIsEditing(false); };
 
-    const onInput = (value: string) => {
-        // setValue(value);
-        // api to update file name
-    };
-
     const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             disableInput();
+            handleSaveMeta({ title: inputRef.current?.value, icon: metaData.icon });
         }
     };
 
@@ -52,7 +50,7 @@ const ToolKit = ({ metaData, data, preview, setValue }: ToolKitProps) => {
                 <div className='flex items-center gap-x-2 group/icon pt-6'>
                     <IconPicker onChange={(emoji) => setValue({ icon: emoji })}>
                         {metaData.icon && metaData.icon.startsWith("data:image") ? (
-                            <img src={metaData.icon} alt="icon" className="w-14 h-14 object-contain" />
+                            <Image src={metaData.icon} alt="icon" width={64} height={64} className="w-16 h-16 object-cover rounded" />
                         ) : (
                             <p className="text-6xl hover:opacity-75 transition font-emoji">{metaData.icon}</p>
                         )}
@@ -64,7 +62,7 @@ const ToolKit = ({ metaData, data, preview, setValue }: ToolKitProps) => {
             )}
             {!!metaData.icon && preview && (
                 metaData.icon && metaData.icon.startsWith("data:image") ? (
-                    <img src={metaData.icon} alt="icon" className="w-14 h-14 object-contain" />
+                    <Image width="56" height="56" src={metaData.icon} alt="icon" className="w-14 h-14 object-contain" />
                 ) : (
                     <p className="text-6xl pt-6 font-emoji">{metaData.icon}</p>
                 )
@@ -81,7 +79,7 @@ const ToolKit = ({ metaData, data, preview, setValue }: ToolKitProps) => {
                 )}
                 {!data.coverImage && !preview && (
                     <Button variant={"outline"} size={"sm"} className='text-muted-foreground text-xs'>
-                        <Image />
+                        <Ima/>
                         Add cover
                     </Button>
                 )}

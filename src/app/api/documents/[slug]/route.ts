@@ -82,9 +82,6 @@ export async function PATCH(request: NextRequest, context: { params: { slug: str
       );
     }
 
-
-    const { title, parentDocumentId, isArchived, isPublic } = parsed.data;
-
     await db.document.update({
       where: { id: documentId },
       data: parsed.data,
@@ -101,7 +98,6 @@ export async function PATCH(request: NextRequest, context: { params: { slug: str
     );
   }
 }
-
 
 export async function DELETE(req: NextRequest, context: { params: { slug: string } }) {
   try {

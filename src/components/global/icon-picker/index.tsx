@@ -12,6 +12,7 @@ import { ImageIcon, SmileIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
+import Image from 'next/image'
 interface IconPickerProps {
     onChange: (emoji: string) => void;
     children: React.ReactNode;
@@ -65,7 +66,7 @@ const IconPicker = ({ onChange, children, asChild }: IconPickerProps) => {
                             <Input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
                         </label>
                         <p className="text-xs text-muted-foreground">or Ctrl+V to paste an image link</p>
-                        {preview && <img src={preview} alt="preview" className="mx-auto rounded-md max-h-32" />}
+                        {preview && <Image width={128} height={128} src={preview} alt="preview" className="mx-auto rounded-md max-h-32" />}
                     </TabsContent>
                 </Tabs>
             </PopoverContent>

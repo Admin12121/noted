@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest, context: { params: { slug: string
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized or session expired" }, { status: 401 });
     }
-    const userIdStr = userId as string;
+    // const userIdStr = userId as string;
 
     const params = await context.params;
     const documentId = params.slug;

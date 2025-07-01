@@ -10,7 +10,7 @@ import { cn, delay } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import UserModal from '@/components/global/header/user-modal';
 import { useAuthUser } from '@/hooks/use-auth-user';
-import { ChevronsLeft, CornerUpRight, Ellipsis, File, FilePenLine, MoveUpRight, Plus, Trash } from 'lucide-react';
+import { ChevronsLeft, CornerUpRight, Ellipsis, File, FilePenLine, Menu, MoveUpRight, Plus, Trash } from 'lucide-react';
 import { Separator } from "@/components/ui/separator"
 import { useCreateDocumentMutation, useLazyGetDocumentsQuery, useArchiveDocumentMutation } from '@/lib/store/api';
 import { toast } from 'sonner';
@@ -52,6 +52,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { addToTrash } from '@/lib/store/slice/archive';
 import Spinner from "@/components/ui/spinner";
+import Image from "next/image";
 
 interface SidebarProps {
     navCollapsedSize?: number;
@@ -252,14 +253,14 @@ export default function ResizableLayout({
                                             <Avatar className="rounded-md bg-[#191919] items-center justify-center" onClick={() => toggleExpand(doc.id)}>
                                                 <AvatarImage src="/icons/arrow-left.svg" className={cn("invert opacity-0 transition duration-300 rotate-180 h-5 w-5 group-hover/item:opacity-100", isExpanded && "rotate-[275deg]")} alt="Kelly King" />
                                                 {doc.icon ?
-                                                    doc.icon.startsWith("data:image") ? (
-                                                        <img src={doc.icon} alt="icon" className="w-14 h-14 object-contain absolute transition duration-300 group-hover/item:opacity-0 font-emoji" />
+                                                    (doc.icon.startsWith("data:image") ? (
+                                                        <Image width={56} height={56} src={doc.icon} alt="icon" className="w-14 h-14 object-contain absolute transition duration-300 group-hover/item:opacity-0 font-emoji" />
                                                     ) : (
-                                                        <p className="text-6xl hover:opacity-75 transition font-emoji">{doc.icon}</p>
-                                                    )
+                                                        <p className="absolute transition duration-300 group-hover/item:opacity-0 text-xl font-emoji">{doc.icon}</p>
+                                                    ))
                                                     : <File size={24} className={cn("absolute transition duration-300 group-hover/item:opacity-0")} />}
                                             </Avatar>
-                                            <p className="w-full h-full flex items-center" onClick={() => route.push(`/${doc.id}`)}>{doc.title}</p>
+                                            <p className="w-full h-full flex items-center overflow-hidden whitespace-nowrap text-ellipsis truncate" onClick={() => route.push(`/${doc.id}`)} title={doc.title} >{doc.title}</p>
                                         </span>
                                         <span className="gap-2 flex items-center opacity-0 group-hover/item:opacity-100 transition-opacity">
                                             <DropdownMenu>
@@ -333,14 +334,14 @@ export default function ResizableLayout({
                         })
                 }
 
-                {/* {docState[parentId]?.hasNext && (
+                {docState[parentId]?.hasNext && (
                     <button
                         onClick={() => loadMore(parentId)}
                         className="text-sm text-blue-500 hover:underline ml-4 mt-2"
                     >
                         Load More
                     </button>
-                )} */}
+                )}
             </AnimatePresence>
         );
     };
@@ -410,9 +411,18 @@ export default function ResizableLayout({
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={defaultLayout[1] || 80} className='flex flex-col h-[100dvh] overflow-hidden'>
-                <header className="flex h-12 shrink-0 items-center gap-2 px-2">
-                    <Button variant={"ghost"} size={"icon"} className={cn("hidden", isCollapsed && 'flex')} onClick={() => collapseHandle()}>
-                        <ChevronsLeft className='!h-5 !w-5 rotate-180' />
+                <header className="flex h-12 shrink-0 items-center gap-2 px-2 group/menuhover">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                            "hidden group-hover/menuhover:flex relative",
+                            isCollapsed && "flex"
+                        )}
+                        onClick={collapseHandle}
+                    >
+                        <Menu className="!h-5 !w-5 flex group-hover/menuhover:hidden" />
+                        <ChevronsLeft className="!h-5 !w-5 rotate-180 hidden group-hover/menuhover:flex" />
                     </Button>
                     <Separator
                         orientation="vertical"

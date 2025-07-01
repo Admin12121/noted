@@ -26,6 +26,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
+import Image from "next/image";
 
 interface UserModalProps {
   user: any;
@@ -63,7 +64,7 @@ export default function UserModal({
       </DropdownMenuTrigger>
       <DropdownMenuContent className={cn("max-w-64", detailed && "max-w-96 w-96")}>
         <DropdownMenuLabel className="flex items-start gap-3">
-          <img
+          <Image
             src="avatar.svg"
             alt="Avatar"
             width={32}

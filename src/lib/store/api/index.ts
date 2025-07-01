@@ -84,6 +84,14 @@ export const userAuthapi = createApi({
         headers: createHeaders(),
       }),
     }),
+    updateDocument: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `api/documents/${id}/update`,
+        method: "PATCH",
+        body: data,
+        headers: createHeaders(),
+      }),
+    }),
   }),
 });
 
@@ -96,4 +104,5 @@ export const {
   useGetArchiveDocumentsQuery,
   useRecoverArchivedDocumentMutation,
   useDeleteDocumentMutation,
+  useUpdateDocumentMutation,
 } = userAuthapi;

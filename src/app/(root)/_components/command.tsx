@@ -17,19 +17,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-// import Tag from "@/components/ui/tag";
-// import { CommandCard } from "./command-card";
-// import { useRouter } from "nextjs-toploader/app";
-// import suggestion from "./suggestions.json";
-// import Fuse from "fuse.js";
 
-const fuseOptions = {
-  includeScore: true,
-  threshold: 0.1,
-  keys: ["text"],
-};
-
-// const fuse = new Fuse(suggestion, fuseOptions);
 
 type Route = { title: string; link?: string; action?: () => void };
 
@@ -55,22 +43,13 @@ const getRandomItems = (array: string[], count: number) => {
 
 const titles = routeMap.map((route) => route.title.toLowerCase());
 
-const getRecentViewedProducts = (): number[] => {
-  if (typeof window !== "undefined") {
-    const key = "recentViewedProducts";
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  }
-  return [];
-};
 
 export default function CommandModal({open, onOpenChange}: { open?: boolean; onOpenChange: (open: boolean) => void }) {
-  // const route = useRouter();
   const [search, setSearch] = React.useState("");
   const [matchedCommand, setMatchedCommand] = React.useState<Route | null>(
     null
   );
-  const [ recentProducts, setRecentProducts ] = React.useState<number[]>(getRecentViewedProducts() || []);
-  const [tag, setTag] = React.useState<string[]>(getRandomItems(titles, 4));
+  const [tag, _setTag] = React.useState<string[]>(getRandomItems(titles, 4));
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -88,28 +67,10 @@ export default function CommandModal({open, onOpenChange}: { open?: boolean; onO
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  const handleRoute = ({ productslug }: { productslug: string }) => {
-    onOpenChange(false);
-    // route.push(`/collections/${productslug}`);
-  };
-
   const [suggestion, setSuggestion] = React.useState("");
 
   const handleInputChange = (value: string) => {
     setSearch(value);
-
-    // if (value.trim()) {
-    //   const results = fuse.search(value);
-    //   if (results.length > 0) {
-    //     setTag(results.slice(0, 5).map((result) => result.item.text));
-    //     const bestMatch = results[0].item.text;
-    //     setSuggestion(bestMatch);
-    //   } else {
-    //     setSuggestion("");
-    //   }
-    // } else {
-    //   setSuggestion("");
-    // }
 
     const normalizedInput = value
       .toLowerCase()

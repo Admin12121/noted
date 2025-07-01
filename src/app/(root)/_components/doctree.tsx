@@ -1,10 +1,6 @@
 import React from 'react'
-import { useCreateDocumentMutation, useGetDocumentsQuery } from '@/lib/store/api';
-import Spinner from '@/components/ui/spinner';
-import type { DocumentType } from '@/schema';
-import { Home, Plus, SearchIcon, Settings, Trash } from 'lucide-react';
+import { Home, Plus, SearchIcon, Settings } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import TrashPopOver from './trash';
 import { cn } from '@/lib/utils';
 import {

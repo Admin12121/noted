@@ -8,7 +8,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { CircleHelp, File, LoaderCircleIcon, MicIcon, Redo2, SearchIcon, Trash, Undo2 } from "lucide-react"
+import { CircleHelp, File, LoaderCircleIcon, SearchIcon, Trash, Undo2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Spinner from "@/components/ui/spinner"
 import { toast } from "sonner"
