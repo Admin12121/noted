@@ -54,7 +54,7 @@ const DocumentPage = ({ slug }: { slug: string }) => {
         setIsSaving(true);
         if (!content) return;
         await delay(500)
-        updateDocument({ id: slug, data: { content } });
+        await updateDocument({ id: slug, data: { content } });
         await delay(500)
         setIsSaving(false);
     }

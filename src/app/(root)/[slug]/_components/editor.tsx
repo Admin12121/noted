@@ -1,4 +1,5 @@
 'use client'
+
 import React, { useEffect, useRef } from 'react'
 import { PartialBlock } from '@blocknote/core'
 import { useCreateBlockNote } from "@blocknote/react"

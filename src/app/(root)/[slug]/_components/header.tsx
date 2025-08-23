@@ -19,6 +19,13 @@ import {
 } from "@/components/ui/navigation-menu"
 import Image from 'next/image'
 
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs"
+import { Safari } from '@/components/ui/safari'
 
 const navigationLinks = [
     { href: "#", label: "Copy  Link" },
@@ -133,7 +140,44 @@ const Header = ({ title, icon, setValue, handleSaveMeta, saving }: HeaderProps) 
                         {showSaved ? "saved" : "saving"}
                     </span>
                 )}
-                <Button size={"sm"} variant={"secondary"}>Share</Button>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button size={"sm"} variant={"secondary"}>Share</Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-96 p-2 rounded-xl">
+                        <Tabs defaultValue="tab-1" className="items-start">
+                            <TabsList>
+                                <TabsTrigger value="tab-1">Share</TabsTrigger>
+                                <TabsTrigger value="tab-2">Publish</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="tab-1">
+                                <p className="text-muted-foreground p-4 text-center text-xs">
+                                    Content for Tab 1
+                                </p>
+                            </TabsContent>
+                            <TabsContent value="tab-2" className='items-center w-full flex justify-center  flex-col gap-2'>
+                                <p className="text-muted-foreground p-4 text-center text-ls">
+                                    Publish to Web
+                                </p>
+                                <div className="relative">
+                                    <Safari
+                                        url="magicui.design"
+                                        className="size-full"
+                                        imageSrc="https://via.placeholder.com/1200x750"
+                                    />
+                                    <div
+                                        style={{
+                                            background:
+                                                "linear-gradient(to bottom, rgba(255,255,255,0) 0%, #171717 100%)"
+                                        }}
+                                        className="pointer-events-none absolute inset-0"
+                                    />
+                                </div>
+                                <Button className='w-full'>Publish</Button>
+                            </TabsContent>
+                        </Tabs>
+                    </PopoverContent>
+                </Popover>
                 <Popover>
                     <PopoverTrigger asChild>
                         <Button

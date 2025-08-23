@@ -334,14 +334,14 @@ export default function ResizableLayout({
                         })
                 }
 
-                {docState[parentId]?.hasNext && (
+                {/* {docState[parentId]?.hasNext && (
                     <button
                         onClick={() => loadMore(parentId)}
                         className="text-sm text-blue-500 hover:underline ml-4 mt-2"
                     >
                         Load More
                     </button>
-                )}
+                )} */}
             </AnimatePresence>
         );
     };
