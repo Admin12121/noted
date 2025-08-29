@@ -5,6 +5,7 @@ import { Image as Ima, Smile, X } from 'lucide-react'
 import React, { ElementRef } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
 import Image from 'next/image'
+import CoverImageModal from './modals/cover-image-modal'
 
 interface ToolKitProps {
     metaData: {
@@ -78,10 +79,7 @@ const ToolKit = ({ metaData, data, preview, setValue, handleSaveMeta }: ToolKitP
                     </IconPicker>
                 )}
                 {!data.coverImage && !preview && (
-                    <Button variant={"outline"} size={"sm"} className='text-muted-foreground text-xs'>
-                        <Ima/>
-                        Add cover
-                    </Button>
+                    <CoverImageModal/>
                 )}
             </div>
             {

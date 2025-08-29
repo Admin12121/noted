@@ -9,6 +9,7 @@ import { useAuthUser } from "@/hooks/use-auth-user";
 import Spinner from "@/components/ui/spinner";
 import { Provider as ReduxProvider } from "react-redux";
 import { store, AppStore } from "@/lib/store/";
+import { EdgeStoreProvider } from '@/lib/edgestore';
 
 export const Provider = ({ children, ...props }: ThemeProviderProps) => {
     const { expire, signOut } = useAuthUser();
@@ -43,7 +44,7 @@ export const Provider = ({ children, ...props }: ThemeProviderProps) => {
             />
             <ClickSpark />
             <ReduxProvider store={storeRef.current}>
-                {children}
+                <EdgeStoreProvider>{children}</EdgeStoreProvider>
             </ReduxProvider>
         </NextThemesProvider>
     );

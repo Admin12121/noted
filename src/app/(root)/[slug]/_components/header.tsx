@@ -163,7 +163,6 @@ const Header = ({ title, icon, setValue, handleSaveMeta, saving }: HeaderProps) 
                                     <Safari
                                         url="magicui.design"
                                         className="size-full"
-                                        imageSrc="https://via.placeholder.com/1200x750"
                                     />
                                     <div
                                         style={{
@@ -216,11 +215,7 @@ const Header = ({ title, icon, setValue, handleSaveMeta, saving }: HeaderProps) 
                                                 {link.label}
                                             </NavigationMenuLink>
                                         )}
-                                        {/* Add separator between different types of items */}
                                         {index < navigationLinks.length - 1 &&
-                                            // Show separator if:
-                                            // 1. One is submenu and one is simple link OR
-                                            // 2. Both are submenus but with different types
                                             ((!link.submenu &&
                                                 navigationLinks[index + 1].submenu) ||
                                                 (link.submenu &&
