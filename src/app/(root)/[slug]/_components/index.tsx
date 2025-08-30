@@ -12,6 +12,8 @@ import { updateDocumentMeta } from '@/lib/store/slice/documents'
 import { useGetDocumentdataQuery, useUpdateDocumentMutation } from '@/lib/store/api'
 import { delay } from '@/lib/utils'
 import { toast } from 'sonner'
+import CoverImageModal from './modals/cover-image-modal'
+import Image from 'next/image'
 
 const DocumentPage = ({ slug }: { slug: string }) => {
     const { data, isLoading } = useGetDocumentdataQuery({ id: slug }, { skip: !slug })
@@ -60,10 +62,14 @@ const DocumentPage = ({ slug }: { slug: string }) => {
     }
 
     return (
-        <div className='pb-40 relative'>
-            {data && <Header title={meta.title} icon={meta.icon} setValue={handleUpdateMeta} handleSaveMeta={handleSaveMeta} saving={isSaving}/>}
-            <div className='h-[20vh]' />
-            <div className='md:max-w-3xl lg:max-w-4xl mx-auto'>
+
+                <div className='pb-40 relative'>
+            {data && <Header title={meta.title} icon={meta.icon} setValue={handleUpdateMeta}  handleSaveMeta={handleSaveMeta} saving={isSaving}/>}
+            <div className='h-[20vh] group'>
+                {data.coverImage && <Image src={data.coverImage} alt='cover-image' className='w-full h-full object-cover' width={2000} height={200} />}
+                {data.coverImage && <CoverImageModal className="absolute right-10 top-2  transition-all duration-200 ease-in-out"/>}
+            </div>
+            <div className='md:max-w-3xl lg:max-w-4xl mx-auto relative -top-[50px]'>
                 {data && <ToolKit metaData={meta} data={data} setValue={handleUpdateMeta} handleSaveMeta={handleSaveMeta} />}
                 {data && <Editor initialContent={data.content} slug={slug} onChange={handleContentChange} />}
             </div>

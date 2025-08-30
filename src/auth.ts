@@ -6,7 +6,7 @@ import { getUserbyId } from "@/lib";
 import { db } from "@/lib/db";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
-  callbacks:{
+  callbacks: {
     async session({ token, session }) {
       if (token.sub && session.user) {
         session.user.id = token.sub;
@@ -14,10 +14,14 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       return session;
     },
     async jwt({ token }) {
-      if (!token.sub) return token;
-      const existingUser = await getUserbyId(token.sub);
-      if (!existingUser) return token;
-      return token;
+      try{
+        if (!token.sub) return token;
+        const user = await getUserbyId(token.sub);
+        if (!user) return null;
+        return token;
+      } catch {
+        return null;
+      }
     },
   },
   adapter: PrismaAdapter(db),

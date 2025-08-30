@@ -1,53 +1,48 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Toaster } from "sonner";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes";
 import ClickSpark from "@/components/global/cursor-sparklin";
-import { useAuthUser } from "@/hooks/use-auth-user";
 import Spinner from "@/components/ui/spinner";
 import { Provider as ReduxProvider } from "react-redux";
 import { store, AppStore } from "@/lib/store/";
-import { EdgeStoreProvider } from '@/lib/edgestore';
+import { EdgeStoreProvider } from "@/lib/edgestore";
+import { SessionProvider } from "next-auth/react";
 
-export const Provider = ({ children, ...props }: ThemeProviderProps) => {
-    const { expire, signOut } = useAuthUser();
+interface ProviderProps extends ThemeProviderProps {
+  session: any;
+}
 
-    useEffect(() => {
-        const currentTime = new Date().getTime();
-        const expireTime = new Date(expire || "").getTime();
+export const Provider = ({ children, session, ...props }: ProviderProps) => {
+  const storeRef = useRef<AppStore | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = store();
+  }
 
-        if (expire && expireTime < currentTime) {
-            signOut({ callbackUrl: "/auth/login" });
-        }
-    }, [expire, signOut]);
-
-    const storeRef = useRef<AppStore | null>(null);
-    if (!storeRef.current) {
-        storeRef.current = store();
-    }
-
-    return (
-        <NextThemesProvider
-            {...props}
-            attribute="class"
-            enableSystem={true}
-            defaultTheme="dark"
-            disableTransitionOnChange
-        >
-            <Toaster
-                icons={{ loading: <Spinner size="sm" color="secondary" /> }}
-                invert={true}
-                theme="system"
-                position="bottom-right"
-            />
-            <ClickSpark />
-            <ReduxProvider store={storeRef.current}>
-                <EdgeStoreProvider>{children}</EdgeStoreProvider>
-            </ReduxProvider>
-        </NextThemesProvider>
-    );
+  return (
+    <NextThemesProvider
+      {...props}
+      attribute="class"
+      enableSystem={true}
+      defaultTheme="dark"
+      disableTransitionOnChange
+    >
+      <Toaster
+        icons={{ loading: <Spinner size="sm" color="secondary" /> }}
+        invert={true}
+        theme="system"
+        position="bottom-right"
+      />
+      <ClickSpark />
+      <SessionProvider session={session}  refetchOnWindowFocus={false}>
+        <ReduxProvider store={storeRef.current}>
+          <EdgeStoreProvider>{children}</EdgeStoreProvider>
+        </ReduxProvider>
+      </SessionProvider>
+    </NextThemesProvider>
+  );
 };
 
 export default Provider;
