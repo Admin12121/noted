@@ -90,7 +90,7 @@ export default function UserModal({
             <BoltIcon size={16} className="opacity-60" aria-hidden="true" />
             <span>manage account</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleNavigation('/documents')}>
+          <DropdownMenuItem onClick={() => handleNavigation('/home')}>
             <Layers2Icon size={16} className="opacity-60" aria-hidden="true" />
             <span>dashboard</span>
           </DropdownMenuItem>

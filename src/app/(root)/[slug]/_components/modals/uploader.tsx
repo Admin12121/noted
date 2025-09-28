@@ -18,9 +18,6 @@ export function SingleImageDropzoneUsage() {
         signal,
         onProgressChange,
       });
-      // you can run some server action or api here
-      // to add the necessary data to your database
-      console.log(res);
       return res;
     },
     [edgestore],
@@ -29,12 +26,13 @@ export function SingleImageDropzoneUsage() {
   return (
     <UploaderProvider uploadFn={uploadFn} autoUpload>
       <SingleImageDropzone
-        height={200}
-        width={200}
+        height={30}
         dropzoneOptions={{
-          maxSize: 1024 * 1024 * 1, // 1 MB
+          maxSize: 1024 * 1024 * 5,
         }}
       />
+      <p className="text-muted-foreground p-1 mt-1 text-center text-xs">Images wider than 1500px work best</p>
+      <p className="text-muted-foreground p-1 mb-1 text-center text-xs">The maximum size per file is 5MB</p>
     </UploaderProvider>
   );
 }

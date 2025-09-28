@@ -162,7 +162,7 @@ export default function TrashPopOver() {
                     {Array.isArray(trashdata) && trashdata.length > 0 ? trashdata.map((data: DocumentType) => (
                         <div
                             key={data.id}
-                            className="hover:bg-accent rounded-md px-3 py-2 text-sm transition-colors flex items-center justify-between w-full"
+                            className="hover:bg-accent rounded-md p-1 cursor-pointer text-sm transition-colors flex items-center justify-between w-full"
                         >
                             <div className="relative flex items-center gap-2">
                                 <File />

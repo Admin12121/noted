@@ -6,6 +6,7 @@ export type DocumentType = {
     icon: string;
     parentDocumentId?: string;
     child?: boolean;
+    coverImage?: string;
 };
 
 type DocState = {

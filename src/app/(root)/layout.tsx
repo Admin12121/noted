@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
+import { cookies } from 'next/headers'
 
 const SidebarLayout = dynamic(() => import("./_components"));
-import { cookies } from 'next/headers'
 
 export default async function RootLayout({
     children,

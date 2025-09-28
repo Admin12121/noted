@@ -14,7 +14,7 @@ export interface SpinnerProps {
 }
 
 const sizeMap = {
-  sm: "1.5em",
+  sm: "1.3em",
   md: "3.25em",
   lg: "5em",
 };

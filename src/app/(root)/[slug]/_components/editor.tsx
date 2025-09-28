@@ -34,7 +34,7 @@ async function uploadFile(file: File) {
     );
 }
 
-const Editor = ({ onChange, initialContent }: EditorProps) => {
+const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
     // const { user } = useAuthUser();
     // const [connected, setConnected] = useState(false);
     // const [text, setText] = useState("");
@@ -121,6 +121,7 @@ const Editor = ({ onChange, initialContent }: EditorProps) => {
             theme={resolvedTheme == "dark" ? "dark" : "light"}
             className='!bg-transparent'
             onChange={handleEditorChange}
+            editable={editable !== false}
         />
     );
 }
